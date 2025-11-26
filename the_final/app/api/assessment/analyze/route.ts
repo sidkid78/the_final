@@ -1,25 +1,64 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-options"
-import { generateObject } from "ai"
-import { z } from "zod"
+import { GoogleGenAI } from "@google/genai"
 
-const accessibilityAnalysisSchema = z.object({
-  roomType: z.enum(["bathroom", "bedroom", "kitchen", "stairs", "entrance", "hallway", "living_room", "other"]),
-  issues: z.array(
-    z.object({
-      category: z.string().describe('Category like "grab bars", "lighting", "flooring", etc.'),
-      title: z.string().describe("Short title of the accessibility issue"),
-      description: z.string().describe("Detailed description of the issue and why it matters for aging in place"),
-      severity: z.enum(["low", "medium", "high"]),
-      estimatedCostMin: z.number().describe("Minimum estimated cost in USD"),
-      estimatedCostMax: z.number().describe("Maximum estimated cost in USD"),
-      recommendation: z.string().describe("Specific recommendation for modification"),
-    }),
-  ),
-  overallScore: z.number().min(0).max(100).describe("Overall accessibility score from 0-100"),
-  summary: z.string().describe("Brief summary of the room accessibility"),
-})
+// Manual Schema Definition for @google/genai SDK which uses string enums for types
+const accessibilityAnalysisSchema = {
+  type: "OBJECT",
+  properties: {
+    roomType: {
+      type: "STRING",
+      enum: ["bathroom", "bedroom", "kitchen", "stairs", "entrance", "hallway", "living_room", "other"],
+    },
+    issues: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          category: {
+            type: "STRING",
+            description: 'Category like "grab bars", "lighting", "flooring", etc.',
+          },
+          title: {
+            type: "STRING",
+            description: "Short title of the accessibility issue",
+          },
+          description: {
+            type: "STRING",
+            description: "Detailed description of the issue and why it matters for aging in place",
+          },
+          severity: {
+            type: "STRING",
+            enum: ["low", "medium", "high"],
+          },
+          estimatedCostMin: {
+            type: "NUMBER",
+            description: "Minimum estimated cost in USD",
+          },
+          estimatedCostMax: {
+            type: "NUMBER",
+            description: "Maximum estimated cost in USD",
+          },
+          recommendation: {
+            type: "STRING",
+            description: "Specific recommendation for modification",
+          },
+        },
+        required: ["category", "title", "description", "severity", "estimatedCostMin", "estimatedCostMax", "recommendation"],
+      },
+    },
+    overallScore: {
+      type: "NUMBER",
+      description: "Overall accessibility score from 0-100",
+    },
+    summary: {
+      type: "STRING",
+      description: "Brief summary of the room accessibility",
+    },
+  },
+  required: ["roomType", "issues", "overallScore", "summary"],
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,16 +79,14 @@ export async function POST(req: NextRequest) {
     const base64Image = Buffer.from(imageBuffer).toString("base64")
     const mimeType = imageResponse.headers.get("content-type") || "image/jpeg"
 
-    const { object } = await generateObject({
-      model: "google/gemini-2.5-flash",
-      schema: accessibilityAnalysisSchema,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `You are an expert in aging-in-place home assessments and accessibility modifications.
+    const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY
+    if (!apiKey) {
+      return NextResponse.json({ error: "Google AI API key not configured" }, { status: 500 })
+    }
+
+    const ai = new GoogleGenAI({ apiKey })
+
+    const prompt = `You are an expert in aging-in-place home assessments and accessibility modifications.
 
 Analyze this ${roomType || "room"} image for accessibility issues that could affect someone aging in place. 
 ${notes ? `Additional context from homeowner: ${notes}` : ""}
@@ -65,21 +102,59 @@ Consider:
 - Emergency access concerns
 
 Provide realistic cost estimates for modifications in USD.
-Score the room 0-100 where 100 is fully accessible.`,
-            },
+Score the room 0-100 where 100 is fully accessible.`
+
+    // Use client.models.generateContent directly
+    const result = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
             {
-              type: "image",
-              image: `data:${mimeType};base64,${base64Image}`,
+              inlineData: {
+                data: base64Image,
+                mimeType: mimeType,
+              },
             },
           ],
         },
       ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: accessibilityAnalysisSchema,
+      }
     })
+
+    // The response in the new SDK is often accessed via .text() helper or specific path
+    // If result has a .text() method, use it. Otherwise access candidates[0].content.parts[0].text
+    let responseText: string | undefined;
+    
+    if (result.text) {
+        responseText = result.text;
+    } else if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+        responseText = result.candidates[0].content.parts[0].text || "{}";
+    }
+
+    if (!responseText) {
+        throw new Error("Empty response from AI");
+    }
+    
+    const object = JSON.parse(responseText)
 
     // Transform the response to match our types
     const analysis = {
       roomType: object.roomType,
-      issues: object.issues.map((issue, index) => ({
+      issues: object.issues.map((issue: {
+        category: string;
+        title: string;
+        description: string;
+        severity: string;
+        estimatedCostMin: number;
+        estimatedCostMax: number;
+        recommendation: string;
+      }, index: number) => ({
         id: `issue-${index}`,
         category: issue.category,
         title: issue.title,
