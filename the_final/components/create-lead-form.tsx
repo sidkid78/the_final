@@ -58,7 +58,7 @@ export function CreateLeadForm({ assessment, onSuccess }: CreateLeadFormProps) {
         throw new Error(data.error || "Failed to create lead")
       }
 
-      const { leadId, matchedContractors } = await response.json()
+      const { leadId } = await response.json()
       setSuccess(true)
 
       if (onSuccess) {

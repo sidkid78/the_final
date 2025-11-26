@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -21,7 +20,6 @@ interface PendingUpload extends AssessmentUpload {
 
 export default function NewAssessmentPage() {
   const { data: session } = useSession()
-  const router = useRouter()
 
   const [uploads, setUploads] = useState<PendingUpload[]>([])
   const [status, setStatus] = useState<AssessmentStatus>("uploading")
@@ -259,7 +257,7 @@ export default function NewAssessmentPage() {
                           fill
                           className="object-cover"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
                         <div className="absolute bottom-2 left-2 right-2">
                           <p className="text-white font-medium capitalize text-sm">
                             {upload.roomType.replace("_", " ")}
@@ -299,7 +297,7 @@ export default function NewAssessmentPage() {
                 {status === "analyzing" && "Analyzing your rooms..."}
                 {status === "generating" && "Generating visualizations..."}
               </h3>
-              <p className="text-muted-foreground mt-1">This may take a few minutes. Please don't close this page.</p>
+              <p className="text-muted-foreground mt-1">This may take a few minutes. Please don&apos;t close this page.</p>
             </div>
           </CardContent>
         </Card>

@@ -9,7 +9,7 @@ import {
 } from "firebase/auth"
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore"
 import { auth, db } from "./config"
-import type { UserRole, HomeownerProfile, ContractorProfile } from "@/lib/user"
+import type { UserRole, AnyUserProfile } from "@/lib/user"
 
 export async function signUp(
   email: string,
@@ -23,7 +23,8 @@ export async function signUp(
   await updateProfile(user, { displayName })
 
   // Create user profile in Firestore
-  const userProfile: Partial<HomeownerProfile | ContractorProfile> = {
+  // Cast role to specific type to satisfy TypeScript, or use generic user profile base
+  const baseProfile = {
     uid: user.uid,
     email: user.email!,
     displayName,
@@ -32,11 +33,24 @@ export async function signUp(
     updatedAt: new Date(),
   }
 
+  // We construct the full object based on role
+  let userProfile: Partial<AnyUserProfile> = { ...baseProfile }
+
   if (role === "contractor") {
-    ;(userProfile as Partial<ContractorProfile>).stripeOnboardingComplete = false
-    ;(userProfile as Partial<ContractorProfile>).verified = false
-    ;(userProfile as Partial<ContractorProfile>).serviceAreas = []
-    ;(userProfile as Partial<ContractorProfile>).services = []
+    userProfile = {
+      ...baseProfile,
+      role: "contractor",
+      stripeOnboardingComplete: false,
+      verified: false,
+      serviceAreas: [],
+      services: [],
+    }
+  } else if (role === "admin") {
+     userProfile = {
+      ...baseProfile,
+      role: "admin",
+      permissions: []
+    }
   }
 
   await setDoc(doc(db, "users", user.uid), {

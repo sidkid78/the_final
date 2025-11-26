@@ -30,23 +30,22 @@ export function StripeConnect({ onStatusChange }: StripeConnectProps) {
   const stripeResult = searchParams.get("stripe")
 
   useEffect(() => {
-    fetchStatus()
-  }, [stripeResult])
-
-  const fetchStatus = async () => {
-    try {
-      const response = await fetch("/api/contractor/stripe/status")
-      if (response.ok) {
-        const data = await response.json()
-        setStatus(data)
-        onStatusChange?.(data)
+    const fetchStatus = async () => {
+      try {
+        const response = await fetch("/api/contractor/stripe/status")
+        if (response.ok) {
+          const data = await response.json()
+          setStatus(data)
+          onStatusChange?.(data)
+        }
+      } catch (err) {
+        console.error("Failed to fetch Stripe status:", err)
+      } finally {
+        setLoading(false)
       }
-    } catch (err) {
-      console.error("Failed to fetch Stripe status:", err)
-    } finally {
-      setLoading(false)
     }
-  }
+    fetchStatus()
+  }, [stripeResult, onStatusChange])
 
   const handleConnect = async () => {
     setConnecting(true)

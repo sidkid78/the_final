@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/auth-options"
 import { createLead, getLead } from "@/lib/lead-functions"
 import { matchLeadToContractors } from "@/lib/matching-functions"
 import { getAssessment } from "@/lib/assessment-functions"
-import { getUserProfile } from "@/lib/auth-functions"
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,9 +19,6 @@ export async function POST(req: NextRequest) {
     if (!assessment || assessment.userId !== session.user.id) {
       return NextResponse.json({ error: "Assessment not found" }, { status: 404 })
     }
-
-    // Get user profile
-    const userProfile = await getUserProfile(session.user.id)
 
     // Extract project types from assessment issues
     const projectTypes = new Set<string>()

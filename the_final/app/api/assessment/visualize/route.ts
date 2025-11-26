@@ -49,8 +49,7 @@ Please generate an image showing how this room would look after these accessibil
             },
             {
               type: "image",
-              image: base64Image,
-              mimeType,
+              image: `data:${mimeType};base64,${base64Image}`,
             },
           ],
         },

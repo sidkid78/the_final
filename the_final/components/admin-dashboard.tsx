@@ -3,14 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Users, Briefcase, BarChart3, AlertTriangle, ArrowRight } from "lucide-react"
 import Link from "next/link"
 
-interface AdminDashboardProps {
-  user: {
-    name: string
-    email: string
-  }
-}
-
-export function AdminDashboard({ user }: AdminDashboardProps) {
+export function AdminDashboard() {
   // In a real app, these would be fetched from Firestore
   const stats = {
     totalUsers: 0,

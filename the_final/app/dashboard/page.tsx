@@ -19,7 +19,7 @@ export default async function DashboardPage() {
     <DashboardLayout user={session.user}>
       {role === "homeowner" && <HomeownerDashboard user={session.user} />}
       {role === "contractor" && <ContractorDashboard user={session.user} />}
-      {role === "admin" && <AdminDashboard user={session.user} />}
+      {role === "admin" && <AdminDashboard />}
     </DashboardLayout>
   )
 }

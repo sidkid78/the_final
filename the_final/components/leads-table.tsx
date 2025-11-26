@@ -57,13 +57,13 @@ export function LeadsTable({ leads }: LeadsTableProps) {
           ) : (
             leads.map((lead) => (
               <TableRow key={lead.id}>
-                <TableCell className="font-medium max-w-[200px] truncate">{lead.title}</TableCell>
+                <TableCell className="font-medium max-w-[200px] truncate">{lead.description}</TableCell>
                 <TableCell>{lead.homeownerName || "—"}</TableCell>
                 <TableCell>
                   {lead.address.city}, {lead.address.state}
                 </TableCell>
                 <TableCell>
-                  ${lead.budgetMin?.toLocaleString()} - ${lead.budgetMax?.toLocaleString()}
+                  ${lead.budget.min.toLocaleString()} - ${lead.budget.max.toLocaleString()}
                 </TableCell>
                 <TableCell>{getStatusBadge(lead.status)}</TableCell>
                 <TableCell>{format(lead.createdAt, "MMM d, yyyy")}</TableCell>
