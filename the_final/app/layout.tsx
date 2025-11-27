@@ -5,7 +5,7 @@ import { AuthProvider } from "@/components/auth-provider"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "HOMEase AI - Aging in Place Home Modifications",
+  title: "HOMEase | AI - Aging in Place Home Modifications",
   description:
     "Connect with certified contractors for aging-in-place home modifications. AI-powered assessments and instant visualizations.",
   generator: "v0.app",

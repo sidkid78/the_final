@@ -10,28 +10,45 @@ function initAdmin() {
   if (getApps().length === 0) {
     const projectId = process.env.FIREBASE_PROJECT_ID
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n")
+    // Handle Vercel/Env newlines and potential surrounding quotes
+    const rawKey = process.env.FIREBASE_PRIVATE_KEY || ""
+    
+    let privateKey = rawKey
+      .replace(/\\n/g, "\n") // Replace literal \n with newlines
+      .replace(/^"|"$/g, "") // Remove surrounding quotes if present
 
     console.log("--- ADMIN SDK INIT ---")
     console.log("Project ID:", projectId)
     console.log("Client Email:", clientEmail)
-    console.log("Private Key exists:", !!privateKey)
-    if (privateKey) {
-      console.log("Key Start:", privateKey.substring(0, 50))
+    console.log("Key Length:", privateKey.length)
+
+    // Basic PEM validation
+    if (!privateKey.includes("-----BEGIN PRIVATE KEY-----") || !privateKey.includes("-----END PRIVATE KEY-----")) {
+       console.error("ERROR: Private Key is missing PEM headers")
     }
+    
+    if (privateKey.length < 100) {
+        console.error("ERROR: Private Key is too short, likely invalid or empty")
+    }
+
     console.log("----------------------")
 
     if (!projectId || !clientEmail || !privateKey) {
       throw new Error("Missing Firebase Admin credentials in environment variables")
     }
 
-    adminApp = initializeApp({
-      credential: cert({
-        projectId,
-        clientEmail,
-        privateKey,
-      }),
-    })
+    try {
+        adminApp = initializeApp({
+        credential: cert({
+            projectId,
+            clientEmail,
+            privateKey,
+        }),
+        })
+    } catch (error) {
+        console.error("Firebase Admin Initialization Error:", error)
+        throw error
+    }
   } else {
     adminApp = getApps()[0]
   }
