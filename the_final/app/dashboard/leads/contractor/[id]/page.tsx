@@ -1,18 +1,20 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-options"
 import { redirect, notFound } from "next/navigation"
-import { getLead, getLeadQuotes } from "@/lib/lead-functions"
-import { getContractorProfile } from "@/lib/contractor-functions"
+import { getLeadAdmin, getLeadQuotesAdmin, getContractorProfile } from "@/lib/server-admin-functions"
 import { SubmitQuoteForm } from "@/components/submit-quote-form"
+import { PurchaseLeadButton } from "@/components/purchase-lead-button"
+import { PurchaseVerifier } from "@/components/purchase-verifier"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ArrowLeft, MapPin, Clock, DollarSign, FileText, AlertCircle, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, MapPin, Clock, DollarSign, FileText, AlertCircle, CheckCircle2, Lock, User, Phone } from "lucide-react"
 import Link from "next/link"
 
 interface ContractorLeadDetailPageProps {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ purchase?: string }>
 }
 
 const urgencyLabels: Record<string, string> = {
@@ -21,8 +23,9 @@ const urgencyLabels: Record<string, string> = {
   high: "Urgent - ASAP",
 }
 
-export default async function ContractorLeadDetailPage({ params }: ContractorLeadDetailPageProps) {
+export default async function ContractorLeadDetailPage({ params, searchParams }: ContractorLeadDetailPageProps) {
   const { id } = await params
+  const { purchase } = await searchParams
   const session = await getServerSession(authOptions)
 
   if (!session) {
@@ -34,9 +37,9 @@ export default async function ContractorLeadDetailPage({ params }: ContractorLea
   }
 
   const [lead, profile, quotes] = await Promise.all([
-    getLead(id),
+    getLeadAdmin(id),
     getContractorProfile(session.user.id),
-    getLeadQuotes(id),
+    getLeadQuotesAdmin(id),
   ])
 
   if (!lead || !lead.matchedContractors.includes(session.user.id)) {
@@ -47,7 +50,10 @@ export default async function ContractorLeadDetailPage({ params }: ContractorLea
     redirect("/dashboard")
   }
 
+  // Check if contractor has purchased this lead
+  const hasPurchased = lead.purchasedBy?.includes(session.user.id) ?? false
   const myQuote = quotes.find((q) => q.contractorId === session.user.id)
+  const leadPrice = lead.price || 2500 // Default $25
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -55,6 +61,14 @@ export default async function ContractorLeadDetailPage({ params }: ContractorLea
       currency: "USD",
       minimumFractionDigits: 0,
     }).format(amount)
+  }
+
+  const formatCurrencyFromCents = (cents: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+    }).format(cents / 100)
   }
 
   const formatDate = (date: Date) => {
@@ -69,7 +83,7 @@ export default async function ContractorLeadDetailPage({ params }: ContractorLea
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard/leads">
+          <Link href="/dashboard/leads/contractor">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -79,7 +93,26 @@ export default async function ContractorLeadDetailPage({ params }: ContractorLea
             {lead.address.city}, {lead.address.state}
           </p>
         </div>
+        {hasPurchased && (
+          <Badge className="bg-primary text-primary-foreground">Purchased</Badge>
+        )}
       </div>
+
+      {/* Purchase Success Message - uses client component for verification */}
+      {purchase === "success" && !hasPurchased && (
+        <PurchaseVerifier leadId={id} />
+      )}
+
+      {/* Already purchased success message */}
+      {purchase === "success" && hasPurchased && (
+        <Alert className="border-primary/20 bg-primary/5 text-primary">
+          <CheckCircle2 className="h-4 w-4" />
+          <AlertTitle>Lead Purchased Successfully!</AlertTitle>
+          <AlertDescription>
+            You now have access to the homeowner's full contact details. Submit your quote below.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Stripe Warning */}
       {!profile.stripeOnboardingComplete && (
@@ -87,7 +120,7 @@ export default async function ContractorLeadDetailPage({ params }: ContractorLea
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Payment Setup Required</AlertTitle>
           <AlertDescription>
-            You need to complete your Stripe setup before you can submit quotes.{" "}
+            You need to complete your Stripe setup before you can purchase leads.{" "}
             <Link href="/dashboard/profile" className="underline font-medium">
               Set up payments
             </Link>
@@ -120,7 +153,16 @@ export default async function ContractorLeadDetailPage({ params }: ContractorLea
                 <div>
                   <p className="font-medium">Location</p>
                   <p className="text-sm text-muted-foreground">
-                    {lead.address.city}, {lead.address.state} {lead.address.zip}
+                    {hasPurchased ? (
+                      <>
+                        {lead.address.street}<br />
+                        {lead.address.city}, {lead.address.state} {lead.address.zip}
+                      </>
+                    ) : (
+                      <>
+                        {lead.address.city}, {lead.address.state} {lead.address.zip}
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
@@ -142,6 +184,44 @@ export default async function ContractorLeadDetailPage({ params }: ContractorLea
                   <p className="text-sm text-muted-foreground">{urgencyLabels[lead.urgency]}</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Contact Info - Only shown after purchase */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                {hasPurchased ? <User className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+                Homeowner Contact
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {hasPurchased ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">{lead.homeownerName}</span>
+                  </div>
+                  {lead.homeownerPhone && (
+                    <div className="flex items-center gap-3">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <a
+                        href={`tel:${lead.homeownerPhone}`}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        {lead.homeownerPhone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-4 text-center">
+                  <Lock className="h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    Purchase this lead to view contact details
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -175,9 +255,52 @@ export default async function ContractorLeadDetailPage({ params }: ContractorLea
           )}
         </div>
 
-        {/* Quote Form */}
+        {/* Quote Form or Purchase Prompt */}
         <div className="lg:col-span-2">
-          {myQuote ? (
+          {!hasPurchased ? (
+            // Not purchased - show purchase prompt
+            <Card>
+              <CardHeader>
+                <CardTitle>Purchase This Lead</CardTitle>
+                <CardDescription>
+                  Get access to the homeowner's contact details and submit your quote
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                  <span className="text-muted-foreground">Lead Price</span>
+                  <span className="text-2xl font-bold">{formatCurrencyFromCents(leadPrice)}</span>
+                </div>
+
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p>✓ Full contact details (name, phone, address)</p>
+                  <p>✓ Ability to submit a personalized quote</p>
+                  <p>✓ Direct communication with the homeowner</p>
+                </div>
+
+                {profile.stripeOnboardingComplete && profile.verified ? (
+                  <PurchaseLeadButton leadId={lead.id} price={leadPrice} />
+                ) : (
+                  <div className="space-y-3">
+                    {!profile.verified && (
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          Your account must be verified by an admin before you can purchase leads.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    {!profile.stripeOnboardingComplete && (
+                      <Button asChild className="w-full">
+                        <Link href="/dashboard/profile">Complete Stripe Setup</Link>
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : myQuote ? (
+            // Purchased and quoted - show quote details
             <Card>
               <CardHeader>
                 <CardTitle>Your Quote</CardTitle>
@@ -223,11 +346,13 @@ export default async function ContractorLeadDetailPage({ params }: ContractorLea
               </CardContent>
             </Card>
           ) : profile.stripeOnboardingComplete ? (
+            // Purchased but not quoted - show quote form
             <div>
               <h2 className="text-lg font-semibold mb-4">Submit Your Quote</h2>
               <SubmitQuoteForm lead={lead} />
             </div>
           ) : (
+            // Purchased but Stripe not set up
             <Card>
               <CardContent className="py-12">
                 <div className="flex flex-col items-center justify-center text-center">
@@ -248,3 +373,4 @@ export default async function ContractorLeadDetailPage({ params }: ContractorLea
     </div>
   )
 }
+

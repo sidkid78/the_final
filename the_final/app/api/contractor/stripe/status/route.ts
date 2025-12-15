@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-options"
-import { getContractorProfile, markStripeOnboardingComplete } from "@/lib/contractor-functions"
+import { getContractorProfile, markStripeOnboardingComplete } from "@/lib/server-admin-functions"
 import Stripe from "stripe"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {

@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-options"
 import { redirect } from "next/navigation"
-import { getContractorProfile } from "@/lib/contractor-functions"
+import { getContractorProfile } from "@/lib/server-admin-functions"
 import { ProfileForm } from "@/components/profile-form"
 import { StripeConnect } from "@/components/stripe-connect"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"

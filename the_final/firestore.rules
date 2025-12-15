@@ -1,0 +1,77 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Users collection - anyone authenticated can read/write their own
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+    }
+    
+    // Assessments collection - users can manage their own
+    match /assessments/{assessmentId} {
+      // Anyone authenticated can create (we check userId in app logic)
+      allow create: if isAuthenticated();
+      
+      // Users can read/update their own assessments
+      allow read, update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Allow delete for owner
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Leads collection
+    match /leads/{leadId} {
+      // Anyone authenticated can create leads
+      allow create: if isAuthenticated();
+      
+      // Owner or matched contractors can read
+      allow read: if isAuthenticated() && (
+        resource.data.homeownerId == request.auth.uid ||
+        request.auth.uid in resource.data.matchedContractors
+      );
+      
+      // Owner or matched contractors can update
+      allow update: if isAuthenticated() && (
+        resource.data.homeownerId == request.auth.uid ||
+        request.auth.uid in resource.data.matchedContractors
+      );
+      
+      // Only owner can delete
+      allow delete: if isAuthenticated() && resource.data.homeownerId == request.auth.uid;
+    }
+    
+    // Quotes collection
+    match /quotes/{quoteId} {
+      // Anyone authenticated can create quotes
+      allow create: if isAuthenticated();
+      
+      // Anyone authenticated can read quotes (homeowners need to see quotes on their leads)
+      allow read: if isAuthenticated();
+      
+      // Only the contractor who made the quote can update it
+      allow update: if isAuthenticated() && resource.data.contractorId == request.auth.uid;
+    }
+    
+    // Notifications collection
+    match /notifications/{notificationId} {
+      allow create: if isAuthenticated();
+      allow read, update: if isAuthenticated() && resource.data.contractorId == request.auth.uid;
+    }
+    
+    // Projects collection (if it exists)
+    match /projects/{projectId} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

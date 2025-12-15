@@ -20,6 +20,12 @@ export const authOptions: NextAuthOptions = {
           const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get()
           const userData = userDoc.data()
 
+          console.log("--- AUTH DEBUG ---")
+          console.log("UID:", decodedToken.uid)
+          console.log("Firestore Doc Exists:", userDoc.exists)
+          console.log("Role in Firestore:", userData?.role)
+          console.log("------------------")
+
           return {
             id: decodedToken.uid,
             email: decodedToken.email || "",

@@ -12,7 +12,7 @@ function initAdmin() {
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
     // Handle Vercel/Env newlines and potential surrounding quotes
     const rawKey = process.env.FIREBASE_PRIVATE_KEY || ""
-    
+
     let privateKey = rawKey
       .replace(/\\n/g, "\n") // Replace literal \n with newlines
       .replace(/^"|"$/g, "") // Remove surrounding quotes if present
@@ -24,11 +24,11 @@ function initAdmin() {
 
     // Basic PEM validation
     if (!privateKey.includes("-----BEGIN PRIVATE KEY-----") || !privateKey.includes("-----END PRIVATE KEY-----")) {
-       console.error("ERROR: Private Key is missing PEM headers")
+      console.error("ERROR: Private Key is missing PEM headers")
     }
-    
+
     if (privateKey.length < 100) {
-        console.error("ERROR: Private Key is too short, likely invalid or empty")
+      console.error("ERROR: Private Key is too short, likely invalid or empty")
     }
 
     console.log("----------------------")
@@ -38,16 +38,16 @@ function initAdmin() {
     }
 
     try {
-        adminApp = initializeApp({
+      adminApp = initializeApp({
         credential: cert({
-            projectId,
-            clientEmail,
-            privateKey,
+          projectId,
+          clientEmail,
+          privateKey,
         }),
-        })
+      })
     } catch (error) {
-        console.error("Firebase Admin Initialization Error:", error)
-        throw error
+      console.error("Firebase Admin Initialization Error:", error)
+      throw error
     }
   } else {
     adminApp = getApps()[0]

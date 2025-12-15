@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import type { ContractorProfile } from "@/lib/user"
-import { updateContractorProfile } from "@/lib/contractor-functions"
+import { updateContractorProfileAction } from "@/lib/actions/contractor-actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -74,7 +74,7 @@ export function ProfileForm({ profile, onUpdate }: ProfileFormProps) {
     setSuccess(false)
 
     try {
-      await updateContractorProfile(profile.uid, {
+      const result = await updateContractorProfileAction({
         displayName,
         companyName,
         licenseNumber: licenseNumber || undefined,
@@ -82,8 +82,13 @@ export function ProfileForm({ profile, onUpdate }: ProfileFormProps) {
         services,
         serviceAreas,
       })
-      setSuccess(true)
-      onUpdate?.()
+
+      if (result.success) {
+        setSuccess(true)
+        onUpdate?.()
+      } else {
+        setError(result.error || "Failed to update profile")
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update profile")
     } finally {

@@ -3,25 +3,34 @@ import { Button } from "@/components/ui/button"
 import { Briefcase, DollarSign, Star, Users, ArrowRight, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { LeadCard } from "@/components/lead-card"
+import type { ContractorProfile } from "@/lib/user"
+import type { Lead } from "@/lib/lead"
 
 interface ContractorDashboardProps {
   user: {
     name: string
     email: string
   }
+  profile: ContractorProfile | null
+  leads: Lead[]
 }
 
-export function ContractorDashboard({ user }: ContractorDashboardProps) {
-  // In a real app, these would be fetched from Firestore
+export function ContractorDashboard({ user, profile, leads }: ContractorDashboardProps) {
+  // Calculate actual stats from profile and leads
   const stats = {
-    activeLeads: 0,
-    pendingQuotes: 0,
-    completedJobs: 0,
-    rating: null as number | null,
+    activeLeads: leads.length,
+    pendingQuotes: 0, // Would need to fetch quotes to get this
+    completedJobs: profile?.reviewCount || 0, // Use reviewCount as proxy
+    rating: profile?.rating || null,
   }
 
-  const stripeOnboarded = false // Would come from user profile
-  const profileComplete = false // Would check services and service areas
+  // Determine onboarding status from actual profile data
+  const stripeOnboarded = profile?.stripeOnboardingComplete ?? false
+  const profileComplete = profile ? (
+    (profile.services?.length ?? 0) > 0 &&
+    (profile.serviceAreas?.length ?? 0) > 0
+  ) : false
 
   return (
     <div className="space-y-8">
@@ -121,17 +130,29 @@ export function ContractorDashboard({ user }: ContractorDashboardProps) {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <Briefcase className="h-8 w-8 text-muted-foreground" />
+          {leads.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Briefcase className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="font-medium">No leads yet</h3>
+              <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                {profileComplete
+                  ? "No matching leads in your service area yet. Check back soon!"
+                  : "Complete your profile to start receiving leads from homeowners in your area"
+                }
+              </p>
             </div>
-            <h3 className="font-medium">No leads yet</h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-              Complete your profile to start receiving leads from homeowners in your area
-            </p>
-          </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {leads.slice(0, 4).map((lead) => (
+                <LeadCard key={lead.id} lead={lead} viewType="contractor" />
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
   )
 }
+

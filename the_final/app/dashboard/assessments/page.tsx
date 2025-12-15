@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-options"
 import { redirect } from "next/navigation"
-import { getUserAssessments } from "@/lib/assessment-functions"
+import { getAssessmentsForUser } from "@/lib/server-admin-functions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,10 +17,10 @@ export default async function AssessmentsPage() {
     redirect("/login")
   }
 
-  let assessments: Awaited<ReturnType<typeof getUserAssessments>> = []
+  let assessments: Awaited<ReturnType<typeof getAssessmentsForUser>> = []
 
   try {
-    assessments = await getUserAssessments(session.user.id)
+    assessments = await getAssessmentsForUser(session.user.id)
   } catch (error) {
     console.error("Failed to fetch assessments:", error)
   }

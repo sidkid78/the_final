@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-options"
 import { redirect, notFound } from "next/navigation"
-import { getLead, getLeadQuotes } from "@/lib/lead-functions"
+import { getLeadAdmin, getLeadQuotesAdmin } from "@/lib/server-admin-functions"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -30,13 +30,13 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     redirect("/login")
   }
 
-  const lead = await getLead(id)
+  const lead = await getLeadAdmin(id)
 
   if (!lead || lead.homeownerId !== session.user.id) {
     notFound()
   }
 
-  const quotes = await getLeadQuotes(id)
+  const quotes = await getLeadQuotesAdmin(id)
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {

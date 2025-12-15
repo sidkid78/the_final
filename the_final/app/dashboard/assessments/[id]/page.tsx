@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-options"
 import { redirect, notFound } from "next/navigation"
-import { getAssessment } from "@/lib/assessment-functions"
+import { getAssessmentById } from "@/lib/server-admin-functions"
 import { AssessmentResults } from "@/components/assessment-results"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
@@ -19,7 +19,7 @@ export default async function AssessmentDetailPage({ params }: AssessmentDetailP
     redirect("/login")
   }
 
-  const assessment = await getAssessment(id)
+  const assessment = await getAssessmentById(id)
 
   if (!assessment || assessment.userId !== session.user.id) {
     notFound()

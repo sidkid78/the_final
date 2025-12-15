@@ -29,6 +29,10 @@ export interface Lead {
   matchedContractors: string[] // Contractor IDs
   status: LeadStatus
 
+  // Lead Purchase (Pay-Per-Lead model)
+  price: number           // Price in cents (e.g., 2500 = $25)
+  purchasedBy: string[]   // Array of contractor IDs who have purchased this lead
+
   // Timestamps
   createdAt: Date
   updatedAt: Date

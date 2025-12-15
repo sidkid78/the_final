@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-options"
 import { redirect } from "next/navigation"
-import { getHomeownerLeads } from "@/lib/lead-functions"
+import { getHomeownerLeadsAdmin } from "@/lib/server-admin-functions"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { LeadCard } from "@/components/lead-card"
@@ -15,10 +15,10 @@ export default async function LeadsPage() {
     redirect("/login")
   }
 
-  let leads: Awaited<ReturnType<typeof getHomeownerLeads>> = []
+  let leads: Awaited<ReturnType<typeof getHomeownerLeadsAdmin>> = []
 
   try {
-    leads = await getHomeownerLeads(session.user.id)
+    leads = await getHomeownerLeadsAdmin(session.user.id)
   } catch (error) {
     console.error("Failed to fetch leads:", error)
   }

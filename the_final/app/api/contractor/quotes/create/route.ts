@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-options"
 import { createQuote, getLead } from "@/lib/lead-functions"
-import { getContractorProfile } from "@/lib/contractor-functions"
+import { getContractorProfile } from "@/lib/server-admin-functions"
 
 export async function POST(req: NextRequest) {
   try {

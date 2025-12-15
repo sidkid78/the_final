@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-options"
 import { redirect } from "next/navigation"
-import { getContractorLeads } from "@/lib/lead-functions"
+import { getContractorLeadsAdmin } from "@/lib/server-admin-functions"
 import { Card, CardContent } from "@/components/ui/card"
 import { LeadCard } from "@/components/lead-card"
 import { Briefcase } from "lucide-react"
@@ -17,10 +17,10 @@ export default async function ContractorLeadsPage() {
     redirect("/dashboard")
   }
 
-  let leads: Awaited<ReturnType<typeof getContractorLeads>> = []
+  let leads: Awaited<ReturnType<typeof getContractorLeadsAdmin>> = []
 
   try {
-    leads = await getContractorLeads(session.user.id)
+    leads = await getContractorLeadsAdmin(session.user.id)
   } catch (error) {
     console.error("Failed to fetch leads:", error)
   }

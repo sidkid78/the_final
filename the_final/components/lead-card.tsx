@@ -98,7 +98,7 @@ export function LeadCard({ lead, viewType = "homeowner" }: LeadCardProps) {
         )}
 
         <Button variant="outline" className="w-full bg-transparent" asChild>
-          <Link href={`/dashboard/leads/${lead.id}`}>
+          <Link href={viewType === "contractor" ? `/dashboard/leads/contractor/${lead.id}` : `/dashboard/leads/${lead.id}`}>
             {viewType === "homeowner" ? "View Quotes" : "View Lead"}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>

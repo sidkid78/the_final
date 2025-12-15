@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-options"
-import { getContractorProfile, updateStripeAccountId } from "@/lib/contractor-functions"
+import { getContractorProfile, updateStripeAccountId } from "@/lib/server-admin-functions"
 import Stripe from "stripe"
 import { getBaseUrl } from "@/lib/url"
 

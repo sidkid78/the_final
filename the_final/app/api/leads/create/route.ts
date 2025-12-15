@@ -1,9 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-options"
-import { createLead, getLead } from "@/lib/lead-functions"
-import { matchLeadToContractors } from "@/lib/matching-functions"
-import { getAssessment } from "@/lib/assessment-functions"
+import { 
+  getAssessmentById, 
+  createLeadAdmin, 
+  getLeadAdmin, 
+  matchLeadToContractorsAdmin 
+} from "@/lib/server-admin-functions"
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,8 +17,8 @@ export async function POST(req: NextRequest) {
 
     const { assessmentId, address, phone, urgency, description } = await req.json()
 
-    // Get assessment data
-    const assessment = await getAssessment(assessmentId)
+    // Get assessment data using Admin SDK
+    const assessment = await getAssessmentById(assessmentId)
     if (!assessment || assessment.userId !== session.user.id) {
       return NextResponse.json({ error: "Assessment not found" }, { status: 404 })
     }
@@ -29,12 +32,12 @@ export async function POST(req: NextRequest) {
       })
     })
 
-    // Create lead
-    const leadId = await createLead({
+    // Create lead using Admin SDK
+    const leadId = await createLeadAdmin({
       assessmentId,
       homeownerId: session.user.id,
       homeownerName: session.user.name || "Homeowner",
-      homeownerEmail: session.user.email,
+      homeownerEmail: session.user.email || "",
       homeownerPhone: phone,
       address,
       projectType: Array.from(projectTypes),
@@ -43,14 +46,14 @@ export async function POST(req: NextRequest) {
       budget: assessment.totalEstimate,
     })
 
-    // Get the created lead
-    const lead = await getLead(leadId)
+    // Get the created lead using Admin SDK
+    const lead = await getLeadAdmin(leadId)
     if (!lead) {
       return NextResponse.json({ error: "Failed to create lead" }, { status: 500 })
     }
 
-    // Match to contractors
-    const matchedContractors = await matchLeadToContractors(lead)
+    // Match to contractors using Admin SDK
+    const matchedContractors = await matchLeadToContractorsAdmin(lead)
 
     return NextResponse.json({
       leadId,

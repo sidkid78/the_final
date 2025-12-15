@@ -1,22 +1,9 @@
-import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore"
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore"
 import { db } from "./config"
 import type { ContractorProfile } from "@/lib/user"
 
-export async function getContractorProfile(uid: string): Promise<ContractorProfile | null> {
-  const userDoc = await getDoc(doc(db, "users", uid))
-
-  if (!userDoc.exists()) return null
-
-  const data = userDoc.data()
-  if (data.role !== "contractor") return null
-
-  return {
-    uid: userDoc.id,
-    ...data,
-    createdAt: data.createdAt?.toDate() || new Date(),
-    updatedAt: data.updatedAt?.toDate() || new Date(),
-  } as ContractorProfile
-}
+// NOTE: getContractorProfile has been moved to server-admin-functions.ts
+// This file contains only client-safe functions that use the client SDK
 
 export async function updateContractorProfile(
   uid: string,
