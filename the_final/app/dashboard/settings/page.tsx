@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth-options"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { SettingsForm } from "@/components/settings-form"
+import { AppearanceSettings } from "@/components/appearance-settings"
 import { getAdminDb } from "@/lib/admin"
 
 export default async function SettingsPage() {
@@ -44,6 +45,8 @@ export default async function SettingsPage() {
                         />
                     </CardContent>
                 </Card>
+
+                <AppearanceSettings />
 
                 <Card>
                     <CardHeader>
